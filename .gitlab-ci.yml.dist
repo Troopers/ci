@@ -1,0 +1,99 @@
+image: troopers/docker-images:ci-victoire
+
+before_script:
+  - mkdir -p src/AppBundle/Resources/public/bower_components
+
+variables:
+  SYMFONY__DATABASE_TEST_HOST: 127.0.0.1:8000
+  SYMFONY__DATABASE_TEST_USER: root
+  SYMFONY__DATABASE_TEST_PASSWORD: ''
+  SYMFONY__DATABASE_NAME_TEST: app_test
+  SYMFONY__DATABASE_NAME: app
+  SYMFONY__DATABASE_USER: root
+  SYMFONY__ASSETIC__SASS__BIN: /usr/local/bin/sass
+  SYMFONY__ASSETIC__RUBY__BIN: /usr/bin/ruby
+  SYMFONY__VICTOIRE_REDIS_PATH_TEST: redis://127.0.0.1
+  SYMFONY__ROUTER__REQUEST_CONTEXT__HOST: 127.0.0.1
+  SYMFONY__ROUTER__REQUEST_CONTEXT__SCHEME: http
+  SYMFONY__FOS_JS_BASE_URL: http://127.0.0.1:8000
+  SYMFONY__MAILER_PORT: '1025'
+  SYMFONY__MAILER_HOST: 127.0.0.1
+  TEST_PARALLELISM_CONTAINER_TOTAL: '4'
+
+cache:
+  paths:
+    - src/AppBundle/Resources/public/bower_components/
+    - vendor/
+
+stages:
+  - install
+  - tests
+
+###### INSTALL ######
+install:
+  stage: install
+  script:
+    - ci/install.sh
+  tags:
+    - fast
+  artifacts:
+    paths:
+      - bin
+      - node_modules
+      - web
+      - vendor
+      - var
+    expire_in: 2 hrs
+    when: on_success
+
+.job_template: &job_definition
+  stage: tests
+  dependencies:
+    - install
+  artifacts:
+    paths:
+      - var/fails/
+      - var/logs/
+    expire_in: 24 hrs
+    when: on_failure
+  except:
+    - /^release\/.*$/
+
+job:1:
+  <<: *job_definition
+  script:
+    - ./ci/services.sh
+    - ./ci/parallelBehat.sh 1
+
+job:2:
+  <<: *job_definition
+  script:
+    - ./ci/services.sh
+    - ./ci/parallelBehat.sh 2
+
+job:3:
+  <<: *job_definition
+  script:
+    - ./ci/services.sh
+    - ./ci/parallelBehat.sh 3
+
+job:4:
+  <<: *job_definition
+  script:
+    - ./ci/services.sh
+    - ./ci/parallelBehat.sh 4
+
+test:checkstyle:
+  stage: tests
+  dependencies:
+    - install
+  script:
+    - sh ci/php-cs-fixer.sh
+  artifacts:
+    paths:
+      - var/patch.diff
+    expire_in: 24 hrs
+    when: on_failure
+  tags:
+    - slow
+  allow_failure: true

@@ -1,6 +1,8 @@
 image: troopers/docker-images:ci-victoire
 
 before_script:
+  - git submodule sync --recursive
+  - git submodule update --init --recursive
   - mkdir -p src/AppBundle/Resources/public/bower_components
 
 variables:

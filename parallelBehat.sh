@@ -21,6 +21,16 @@ else
     containerIndex=$1
 fi
 
+
+if [ ! -f var/scenarios ]
+then
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    echo "File cat/scenarios not found, probably because artifacts have been experied"
+    echo "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
+    
+    exit 1
+fi
+
 echo "Container $containerIndex/$TEST_PARALLELISM_CONTAINER_TOTAL"
 
 # Don't rely on default order
